@@ -32,7 +32,7 @@ def create_query(user_query, filters, sort="_score", sortDir="desc", size=10, in
                               "match": {
                                     "name": {
                                         "query": user_query,
-                                        "fuzziness": "1",
+                                        "fuzziness": "AUTO",
                                         "prefix_length": 2, # short words are often acronyms or usually not misspelled, so don't edit
                                         "boost": 0.01
                                     }
@@ -178,13 +178,17 @@ def add_click_priors(query_obj, user_query, priors_gb):
     try:
         prior_clicks_for_query = priors_gb.get_group(user_query)
         if prior_clicks_for_query is not None and len(prior_clicks_for_query) > 0:
-            click_prior = ""
+            click_prior = prior_clicks_for_query.groupby("sku").size() / prior_clicks_for_query.size
+            click_prior = click_prior[click_prior > 0.001]
+            click_prior = click_prior * 100
+            click_prior = click_prior.round(4)
+            click_prior_str = " ".join([f"{sku}^{boost}" for sku, boost in zip(click_prior.index, click_prior.values)])
+
+
             #### W2, L1, S1
             # Create a string object of SKUs and weights that will boost documents matching the SKU
-            print("TODO: Implement me")
-            if click_prior != "":
-                click_prior_query_obj = None # Implement a query object that matches on the ID or SKU with weights of
-                # This may feel like cheating, but it's really not, esp. in ecommerce where you have all this prior data,
+            if click_prior_str != "":
+                click_prior_query_obj = {"query_string": {"query": click_prior_str, "fields": ["sku"], "boost": 1000}}
                 if click_prior_query_obj is not None:
                     query_obj["query"]["function_score"]["query"]["bool"]["should"].append(click_prior_query_obj)
     except KeyError as ke:

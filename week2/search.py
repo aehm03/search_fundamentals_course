@@ -108,9 +108,9 @@ def query():
 
         query_obj = qu.create_query(user_query,  [], sort, sortDir, size=20)  # We moved create_query to a utility class so we could use it elsewhere.
         ##### W2, L1, S2
-
+        qu.add_click_priors(query_obj, user_query, prior_clicks)
         ##### W2, L2, S2
-        print("Plain ol q: %s" % json.dumps(query_obj))
+        print("Plain ol q: %s" % json.dumps(query_obj, indent=2))
     elif request.method == 'GET':  # Handle the case where there is no query or just loading the page
         user_query = request.args.get("query", "*")
         filters_input = request.args.getlist("filter.name")
